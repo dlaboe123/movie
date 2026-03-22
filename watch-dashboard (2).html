@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nicole & Daniel · Watch Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0E0D0B;
+  --bg2: #161512;
+  --bg3: #1E1C18;
+  --bg4: #252320;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #E8E4DC;
+  --text2: #9C9486;
+  --text3: #5C574F;
+  --amber: #D4913A;
+  --amber2: #F0B060;
+  --amber-soft: rgba(212,145,58,0.12);
+  --red: #C44830;
+  --green: #4A8C5C;
+  --card-r: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* GRAIN OVERLAY */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:1000;
+  opacity:0.4;
+}
+
+/* API KEY SETUP */
+#setup-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.setup-card {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+}
+.setup-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+.setup-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+.setup-title em { font-style: italic; color: var(--amber); }
+.setup-sub {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 2.5rem;
+  line-height: 1.75;
+}
+.setup-sub a { color: var(--amber); text-decoration: none; }
+.setup-sub a:hover { text-decoration: underline; }
+.api-input-wrap {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.api-input-wrap input {
+  flex: 1;
+  background: var(--bg3);
+  border: none;
+  color: var(--text);
+  font-family: 'Outfit', monospace;
+  font-size: 14px;
+  padding: 14px 18px;
+  outline: none;
+  min-width: 0;
+}
+.api-input-wrap input::placeholder { color: var(--text3); }
+.btn-go {
+  background: var(--amber);
+  color: var(--bg);
+  border: none;
+  padding: 14px 24px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-go:hover { background: var(--amber2); }
+.setup-note {
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.6;
+}
+.setup-note strong { color: var(--text2); }
+
+/* MAIN APP */
+#app { display: none; }
+
+/* HEADER */
+.header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: rgba(14,13,11,0.95);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  gap: 1rem;
+}
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.header-title span { color: var(--amber); font-style: italic; }
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.pill-btn {
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: 'Outfit', sans-serif;
+}
+.pill-btn:hover { border-color: var(--amber); color: var(--amber); }
+.pill-btn.active { background: var(--amber); border-color: var(--amber); color: var(--bg); }
+.change-key-btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  padding: 4px 8px;
+  transition: color 0.15s;
+}
+.change-key-btn:hover { color: var(--text2); }
+
+/* HERO BAND */
+.hero-band {
+  padding: 3rem 2rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.hero-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--amber);
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+.hero-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
+}
+.hero-heading em { font-style: italic; color: var(--amber); }
+.hero-sub {
+  font-size: 14px;
+  color: var(--text2);
+  max-width: 560px;
+  line-height: 1.7;
+}
+
+/* FILTER BAR */
+.filter-bar {
+  padding: 1.25rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+.filter-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.mood-select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.mood-select:focus { border-color: var(--amber); }
+.mood-select option { background: var(--bg3); }
+
+/* SECTIONS */
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 2rem 0;
+}
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-badge {
+  font-size: 11px;
+  font-family: 'Outfit', sans-serif;
+  background: var(--amber-soft);
+  color: var(--amber);
+  border: 1px solid rgba(212,145,58,0.25);
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.section-badge.new { background: rgba(74,140,92,0.15); color: #6DBF88; border-color: rgba(74,140,92,0.25); }
+.section-desc {
+  font-size: 13px;
+  color: var(--text3);
+}
+
+/* FILM GRID */
+.film-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 3rem;
+}
+@media(max-width:600px) {
+  .film-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
+/* FILM CARD */
+.film-card {
+  background: var(--bg2);
+  border-radius: var(--card-r);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+  animation: cardIn 0.4s ease both;
+}
+@keyframes cardIn {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.film-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.film-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  background: var(--bg3);
+  position: relative;
+  overflow: hidden;
+}
+.film-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s;
+}
+.film-card:hover .film-poster img { transform: scale(1.04); }
+.film-poster-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: var(--text3);
+  background: var(--bg3);
+}
+.match-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(14,13,11,0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(212,145,58,0.4);
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+}
+.new-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(74,140,92,0.9);
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.film-info {
+  padding: 12px 12px 14px;
+}
+.film-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  line-height: 1.3;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.film-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.film-year { }
+.film-dot { opacity: 0.4; }
+.film-rating {
+  color: var(--amber);
+  font-weight: 500;
+}
+.film-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.genre-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  background: var(--bg4);
+  border-radius: 4px;
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+.film-streaming {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.stream-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 500;
+  border: 1px solid;
+}
+.stream-Netflix    { background:rgba(229,9,20,0.15);    color:#FF5A5A; border-color:rgba(229,9,20,0.3); }
+.stream-Max        { background:rgba(0,100,210,0.15);   color:#5AB4FF; border-color:rgba(0,100,210,0.3); }
+.stream-Hulu       { background:rgba(28,231,131,0.12);  color:#1CE783; border-color:rgba(28,231,131,0.25); }
+.stream-Prime      { background:rgba(0,168,225,0.12);   color:#00A8E1; border-color:rgba(0,168,225,0.25); }
+.stream-Apple      { background:rgba(255,255,255,0.08); color:#E8E4DC; border-color:rgba(255,255,255,0.15); }
+.stream-MUBI       { background:rgba(212,145,58,0.12);  color:var(--amber); border-color:rgba(212,145,58,0.25); }
+.stream-Peacock    { background:rgba(255,150,0,0.12);   color:#FFA040; border-color:rgba(255,150,0,0.25); }
+.stream-Paramount  { background:rgba(0,130,200,0.12);   color:#40B4FF; border-color:rgba(0,130,200,0.25); }
+.stream-Shudder    { background:rgba(160,0,0,0.15);     color:#FF8080; border-color:rgba(160,0,0,0.3); }
+.stream-Criterion  { background:rgba(180,180,180,0.1);  color:#B4B4B4; border-color:rgba(180,180,180,0.2); }
+.stream-other      { background:var(--bg4); color:var(--text3); border-color:var(--border); }
+
+/* MATCH REASONS */
+.match-reasons {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.reason-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-radius: 3px;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal {
+  background: var(--bg2);
+  border-radius: 14px;
+  border: 1px solid var(--border2);
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
+  position: relative;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-backdrop {
+  width: 100%;
+  height: 260px;
+  position: relative;
+  overflow: hidden;
+}
+.modal-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.4);
+}
+.modal-backdrop-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+}
+.modal-backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--bg2) 0%, transparent 60%);
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 10;
+}
+.modal-close:hover { background: rgba(255,255,255,0.1); }
+.modal-poster-float {
+  position: absolute;
+  bottom: -30px;
+  left: 24px;
+  width: 90px;
+  height: 135px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.modal-poster-float img { width:100%; height:100%; object-fit:cover; }
+.modal-body { padding: 48px 24px 28px 130px; }
+@media(max-width:500px) {
+  .modal-poster-float { display:none; }
+  .modal-body { padding: 24px 20px; }
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+.modal-meta {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.modal-meta-sep { opacity: 0.3; }
+.modal-rating-star { color: var(--amber); }
+.modal-overview {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.75;
+  margin-bottom: 20px;
+}
+.modal-section-label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+  margin-top: 16px;
+  font-weight: 500;
+}
+.modal-streaming { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.modal-stream-chip {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid;
+}
+.modal-why {
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.7;
+  border-left: 3px solid var(--amber);
+  margin-bottom: 8px;
+}
+.modal-why strong { color: var(--amber); font-weight: 500; }
+
+/* SEEN / DISMISS ROW */
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.action-btn:hover { border-color: var(--amber); color: var(--amber); }
+.action-btn.primary { background: var(--amber); border-color: var(--amber); color: var(--bg); }
+.action-btn.primary:hover { background: var(--amber2); }
+.action-btn.seen { background: rgba(74,140,92,0.15); border-color: rgba(74,140,92,0.3); color: #6DBF88; }
+
+/* LOADING */
+.loading-screen {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text2);
+  font-size: 14px;
+}
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text3);
+}
+.empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--text2); margin-bottom: 0.5rem; }
+.empty-state p { font-size: 13px; line-height: 1.6; }
+
+/* PROFILE STRIP */
+.profile-strip {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+@media(max-width:600px) { .profile-strip { grid-template-columns: 1fr; } }
+.profile-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.profile-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: var(--amber);
+}
+.profile-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.profile-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--bg4);
+  border-radius: 4px;
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+
+/* ERROR */
+.error-banner {
+  background: rgba(196,72,48,0.15);
+  border: 1px solid rgba(196,72,48,0.3);
+  color: #FF8070;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin: 1rem 2rem;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* FOOTER */
+.footer {
+  text-align: center;
+  padding: 3rem 2rem;
+  font-size: 12px;
+  color: var(--text3);
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+.footer a { color: var(--text3); }
+
+/* SEEN LIST TOGGLE */
+.seen-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  transition: color 0.15s;
+}
+.seen-toggle:hover { color: var(--text2); }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-eyebrow">Nicole & Daniel</div>
+    <h1 class="setup-title">Your <em>watch</em><br>dashboard</h1>
+    <p class="setup-sub">
+      Powered by your taste profiles and the TMDb API.<br>
+      You'll need a free API key from
+      <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a> —
+      takes about 2 minutes to get one (use "API Read Access Token", the long one).
+    </p>
+    <div class="api-input-wrap">
+      <input type="text" id="api-key-input" placeholder="Paste your TMDb API Read Access Token here..." />
+      <button class="btn-go" onclick="initApp()">Load →</button>
+    </div>
+    <p class="setup-note">
+      <strong>Your key stays in your browser only</strong> — never sent anywhere except TMDb's servers directly.<br>
+      It will be saved locally so you don't have to re-enter it.
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <div class="header">
+    <div class="header-title">Nicole <span>&</span> Daniel</div>
+    <div class="header-controls">
+      <button class="pill-btn active" id="tab-all" onclick="setTab('all')">All picks</button>
+      <button class="pill-btn" id="tab-new" onclick="setTab('new')">New to streaming</button>
+      <button class="pill-btn" id="tab-overlap" onclick="setTab('overlap')">Strong overlap</button>
+      <button class="change-key-btn" onclick="changeKey()">⚙ key</button>
+    </div>
+  </div>
+
+  <div class="hero-band">
+    <div class="hero-label">Your joint watch list</div>
+    <h1 class="hero-heading">Films made for <em>both</em> of you</h1>
+    <p class="hero-sub">Matched to your shared taste profile — high-concept, uncanny, atmospheric, with substance. Filtered to what's streaming now.</p>
+  </div>
+
+  <div class="profile-strip" id="profile-strip">
+    <div class="profile-card">
+      <div class="profile-name">Nicole</div>
+      <div class="profile-tags">
+        <span class="profile-tag">Psychological thriller</span>
+        <span class="profile-tag">Folk horror</span>
+        <span class="profile-tag">Philosophical sci-fi</span>
+        <span class="profile-tag">Surrealism</span>
+        <span class="profile-tag">Liminal spaces</span>
+        <span class="profile-tag">Uncanny</span>
+        <span class="profile-tag">Channel Zero energy</span>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="profile-name">Daniel</div>
+      <div class="profile-tags">
+        <span class="profile-tag">Psychological thriller</span>
+        <span class="profile-tag">Philosophical sci-fi</span>
+        <span class="profile-tag">Crime / noir</span>
+        <span class="profile-tag">Heist / thriller</span>
+        <span class="profile-tag">Memory & time</span>
+        <span class="profile-tag">Nolan-adjacent</span>
+        <span class="profile-tag">High concept</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Mood tonight:</span>
+    <select class="mood-select" id="mood-filter" onchange="applyFilters()">
+      <option value="all">Any mood</option>
+      <option value="tense">Tense & gripping</option>
+      <option value="uncanny">Weird & uncanny</option>
+      <option value="cerebral">Cerebral & slow</option>
+      <option value="dark">Dark & atmospheric</option>
+      <option value="mind-bending">Mind-bending</option>
+      <option value="international">International cinema</option>
+      <option value="lighter">Lighter / dark comedy</option>
+    </select>
+    <span class="filter-label" style="margin-left:8px">Platform:</span>
+    <select class="mood-select" id="platform-filter" onchange="applyFilters()">
+      <option value="all">All platforms</option>
+      <option value="Netflix">Netflix</option>
+      <option value="Max">Max</option>
+      <option value="Hulu">Hulu</option>
+      <option value="Prime">Prime</option>
+      <option value="Apple">Apple TV+</option>
+      <option value="MUBI">MUBI</option>
+    </select>
+    <button class="seen-toggle" onclick="toggleShowSeen()" id="seen-toggle-btn">
+      <span id="seen-toggle-icon">○</span> Show seen films
+    </button>
+  </div>
+
+  <div id="error-area"></div>
+  <div id="main-content"></div>
+
+  <div class="footer">
+    Powered by <a href="https://www.themoviedb.org" target="_blank">TMDb</a> · Streaming data via TMDb watch providers · Built for Nicole & Daniel
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+// ─── TASTE PROFILES ─────────────────────────────────────────────────────────
+const NICOLE = {
+  name: 'Nicole',
+  genres: ['Psychological thriller','Folk horror','International','Sci-fi','Dark comedy','Mythology','Surrealism','Historical'],
+  themes: ['Memory & time','Isolation','Liminal spaces','Disappearance','Trauma','Power','Mythology & uncanny','Class & society'],
+  values: ['Concept & idea','Emotional impact','World-building'],
+  loved: ['Parasite','Annihilation','Arrival',"Pan's Labyrinth"],
+  liked: ['Midsommar','The Witch','The Lighthouse','Saint Maud'],
+  disliked: ['Under the Skin','A Ghost Story'],
+  darkness: 80, challenge: 85, pace: 33, mainstream: 3
+};
+const DANIEL = {
+  name: 'Daniel',
+  genres: ['Psychological thriller','Sci-fi','Crime / noir','Heist','Dark comedy','Historical','Surrealism'],
+  themes: ['Memory & time','Power & control','Trauma','Disappearance','Mythology & uncanny','Class & society','Liminal spaces'],
+  values: ['Cinematography','Concept & idea','Director\'s vision'],
+  loved: ['Midsommar','Parasite','Mulholland Drive','Annihilation','Arrival','The Lighthouse',"Pan's Labyrinth",'Enemy','The Handmaiden'],
+  liked: [],
+  disliked: [],
+  darkness: 72, challenge: 85, pace: 50, mainstream: 35
+};
+
+// ─── CURATED FILM LIST ───────────────────────────────────────────────────────
+// TMDb IDs for films that match the joint taste profile
+const CURATED_FILMS = [
+  // STRONG OVERLAP — both profiles
+  { tmdbId: 496243, title: 'Parasite',              year: 2019, matchScore: 98, reasons: ['Loved by both','Class & society','Dark comedy'], mood: ['tense','cerebral','international'], isNew: false },
+  { tmdbId: 283995, title: 'Annihilation',          year: 2018, matchScore: 97, reasons: ['Loved by both','Uncanny','Philosophical sci-fi','Disappearance'], mood: ['uncanny','cerebral','mind-bending'], isNew: false },
+  { tmdbId: 329865, title: 'Arrival',               year: 2016, matchScore: 96, reasons: ['Loved by both','Memory & time','High concept sci-fi'], mood: ['cerebral','mind-bending'], isNew: false },
+  { tmdbId: 348,    title: "Alien",                 year: 1979, matchScore: 88, reasons: ['High concept','Isolation','Atmosphere','Uncanny'], mood: ['tense','dark','uncanny'], isNew: false },
+  { tmdbId: 400160, title: 'The Lighthouse',        year: 2019, matchScore: 91, reasons: ['Liked by both','Isolation','Mythology','Atmosphere'], mood: ['dark','cerebral','uncanny'], isNew: false },
+  { tmdbId: 425770, title: 'Midsommar',             year: 2019, matchScore: 90, reasons: ['Liked/loved by both','Folk horror','Mythology'], mood: ['dark','uncanny'], isNew: false },
+
+  // UNSEEN BY NICOLE — Daniel loved them
+  { tmdbId: 314365, title: 'The Handmaiden',        year: 2016, matchScore: 94, reasons: ['Power & control','International','Daniel loved'], mood: ['tense','cerebral','international'], isNew: false },
+  { tmdbId: 259316, title: 'Enemy',                 year: 2013, matchScore: 89, reasons: ['Doppelgänger','Liminal','Psychological','Daniel loved'], mood: ['uncanny','cerebral','mind-bending'], isNew: false },
+  { tmdbId: 244786, title: 'Whiplash',              year: 2014, matchScore: 82, reasons: ['Obsession','High concept','Intense'], mood: ['tense','cerebral'], isNew: false },
+
+  // UNSEEN BY BOTH — strong profile matches
+  { tmdbId: 466282, title: 'Portrait of a Lady on Fire', year: 2019, matchScore: 87, reasons: ['Liminal','Female gaze','Period','International'], mood: ['cerebral','international'], isNew: false },
+  { tmdbId: 696374, title: 'The Zone of Interest',  year: 2023, matchScore: 85, reasons: ['Uncanny','Violence & consequence','Challenging'], mood: ['dark','cerebral'], isNew: false },
+  { tmdbId: 674324, title: 'The Banshees of Inisherin', year: 2022, matchScore: 84, reasons: ['Dark comedy','Isolation','Mythology adjacent'], mood: ['dark','lighter'], isNew: false },
+  { tmdbId: 376867, title: 'Moonlight',             year: 2016, matchScore: 83, reasons: ['Emotional impact','World-building','Identity'], mood: ['cerebral','dark'], isNew: false },
+  { tmdbId: 508947, title: 'Turning Red',           year: 2022, matchScore: 55, reasons: ['Animation','Transformation'], mood: ['lighter'], isNew: false },
+  { tmdbId: 438695, title: 'Sinners',               year: 2025, matchScore: 91, reasons: ['High concept','Dark','Mythology','Atmospheric'], mood: ['dark','tense','uncanny'], isNew: true },
+  { tmdbId: 762441, title: 'A Quiet Place Part II', year: 2021, matchScore: 76, reasons: ['Tension','Survival','Isolation'], mood: ['tense','dark'], isNew: false },
+  { tmdbId: 385687, title: 'Speak No Evil',         year: 2024, matchScore: 88, reasons: ['Uncanny','Psychological dread','Slow burn'], mood: ['uncanny','tense','dark'], isNew: true },
+  { tmdbId: 539681, title: 'M3GAN',                 year: 2022, matchScore: 74, reasons: ['Uncanny','Dark comedy','High concept'], mood: ['uncanny','lighter'], isNew: false },
+  { tmdbId: 615656, title: 'Meg 2: The Trench',     year: 2023, matchScore: 40, reasons: [], mood: ['tense'], isNew: false },
+  { tmdbId: 934632, title: 'Longlegs',              year: 2024, matchScore: 86, reasons: ['Psychological','Serial crime','Uncanny','Atmospheric'], mood: ['tense','uncanny','dark'], isNew: true },
+  { tmdbId: 507089, title: "Five Nights at Freddy's", year: 2023, matchScore: 62, reasons: ['Horror','Mythology'], mood: ['dark'], isNew: false },
+  { tmdbId: 640146, title: 'Ant-Man and the Wasp: Quantumania', year: 2023, matchScore: 20, reasons: [], mood: [], isNew: false },
+  { tmdbId: 760741, title: 'Beast',                 year: 2022, matchScore: 58, reasons: ['Survival','Tension'], mood: ['tense'], isNew: false },
+  { tmdbId: 438631, title: 'Dune',                  year: 2021, matchScore: 88, reasons: ['Sci-fi spectacle','World-building','Mythology','High concept'], mood: ['cerebral','mind-bending'], isNew: false },
+  { tmdbId: 693134, title: 'Dune: Part Two',        year: 2024, matchScore: 89, reasons: ['Sci-fi spectacle','Power','Mythology','Director\'s vision'], mood: ['cerebral','mind-bending'], isNew: true },
+  { tmdbId: 762504, title: 'Nope',                  year: 2022, matchScore: 88, reasons: ['Uncanny','Disappearance','High concept horror','Atmospheric'], mood: ['uncanny','tense','mind-bending'], isNew: false },
+  { tmdbId: 335984, title: 'Blade Runner 2049',     year: 2017, matchScore: 91, reasons: ['Philosophical sci-fi','Atmosphere','Memory & time','Cinematography'], mood: ['cerebral','dark','mind-bending'], isNew: false },
+  { tmdbId: 27205,  title: 'Inception',             year: 2010, matchScore: 88, reasons: ['Memory & time','High concept','Daniel-aligned','Mind-bending'], mood: ['mind-bending','cerebral','tense'], isNew: false },
+  { tmdbId: 419430, title: 'Get Out',               year: 2017, matchScore: 92, reasons: ['Uncanny','Social commentary','Psychological horror','Liminal'], mood: ['tense','uncanny','mind-bending'], isNew: false },
+  { tmdbId: 335983, title: 'Venom',                 year: 2018, matchScore: 25, reasons: [], mood: [], isNew: false },
+  { tmdbId: 522924, title: 'The Witch',             year: 2015, matchScore: 90, reasons: ['Folk horror','Isolation','Mythology','Nicole liked'], mood: ['dark','uncanny'], isNew: false },
+  { tmdbId: 460458, title: 'Revenge',               year: 2017, matchScore: 72, reasons: ['Violence & consequence','French horror','International'], mood: ['dark','tense','international'], isNew: false },
+  { tmdbId: 475430, title: 'Hereditary',            year: 2018, matchScore: 82, reasons: ['Family trauma','Uncanny','Atmosphere'], mood: ['dark','uncanny'], isNew: false },
+  { tmdbId: 436270, title: 'Black Adam',            year: 2022, matchScore: 15, reasons: [], mood: [], isNew: false },
+  { tmdbId: 985939, title: 'Fall',                  year: 2022, matchScore: 65, reasons: ['Survival','Tension'], mood: ['tense'], isNew: false },
+  { tmdbId: 741067, title: 'Caché (Hidden)',        year: 2005, matchScore: 88, reasons: ['Psychological','Disappearance','Memory','International'], mood: ['cerebral','tense','international'], isNew: false },
+  { tmdbId: 378441, title: 'Raw',                   year: 2016, matchScore: 80, reasons: ['Body horror','Dark','International','Challenging'], mood: ['dark','uncanny','international'], isNew: false },
+  { tmdbId: 424694, title: 'Burning',               year: 2018, matchScore: 86, reasons: ['Disappearance','Class','Atmospheric','International'], mood: ['cerebral','uncanny','international'], isNew: false },
+  { tmdbId: 760104, title: 'X',                     year: 2022, matchScore: 74, reasons: ['Horror','Atmosphere','Craft-driven'], mood: ['dark','tense'], isNew: false },
+  { tmdbId: 539537, title: 'Men',                   year: 2022, matchScore: 80, reasons: ['Folk horror','Mythology','Uncanny','Liminal'], mood: ['uncanny','dark'], isNew: false },
+  { tmdbId: 667257, title: 'Lamb',                  year: 2021, matchScore: 82, reasons: ['Folk horror','Mythology','Uncanny','International'], mood: ['uncanny','dark','international'], isNew: false },
+  { tmdbId: 400579, title: 'Atlantics',             year: 2019, matchScore: 80, reasons: ['International','Uncanny','Disappearance','Liminal'], mood: ['uncanny','cerebral','international'], isNew: false },
+  { tmdbId: 508442, title: 'Soul',                  year: 2020, matchScore: 70, reasons: ['Memory & time','Animation','High concept'], mood: ['lighter','cerebral'], isNew: false },
+  { tmdbId: 646097, title: 'Barbarian',             year: 2022, matchScore: 84, reasons: ['Uncanny','Psychological','Subverts expectations','Liminal'], mood: ['tense','uncanny','dark'], isNew: false },
+  { tmdbId: 436969, title: 'The Suicide Squad',     year: 2021, matchScore: 18, reasons: [], mood: [], isNew: false },
+  { tmdbId: 1011985, title: 'Kinds of Kindness',    year: 2024, matchScore: 83, reasons: ['Surrealism','Dark comedy','Yorgos Lanthimos'], mood: ['uncanny','lighter','cerebral'], isNew: true },
+  { tmdbId: 974635, title: 'The Substance',         year: 2024, matchScore: 86, reasons: ['Body horror','Surrealism','Dark comedy','Power'], mood: ['uncanny','dark','lighter'], isNew: true },
+  { tmdbId: 945961, title: 'Alien: Romulus',        year: 2024, matchScore: 79, reasons: ['Sci-fi','Isolation','Atmosphere'], mood: ['tense','dark'], isNew: true },
+  { tmdbId: 1084736, title: 'Conclave',             year: 2024, matchScore: 84, reasons: ['Psychological thriller','Power & control','Historical','Cerebral'], mood: ['tense','cerebral'], isNew: true },
+  { tmdbId: 1091580, title: 'The Brutalist',        year: 2024, matchScore: 82, reasons: ['Historical','Trauma','Director\'s vision','Challenging'], mood: ['cerebral','dark'], isNew: true },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let API_KEY = '';
+let allFilms = [];
+let filteredFilms = [];
+let currentTab = 'all';
+let currentMood = 'all';
+let currentPlatform = 'all';
+let showSeen = false;
+let seenFilms = new Set(JSON.parse(localStorage.getItem('seen-films') || '[]'));
+let dismissedFilms = new Set(JSON.parse(localStorage.getItem('dismissed-films') || '[]'));
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  const saved = localStorage.getItem('tmdb-key');
+  if (saved) {
+    API_KEY = saved;
+    document.getElementById('api-key-input').value = saved;
+    launchApp();
+  }
+};
+
+async function initApp() {
+  const input = document.getElementById('api-key-input').value.trim();
+  if (!input) return;
+  API_KEY = input;
+  localStorage.setItem('tmdb-key', input);
+  launchApp();
+}
+
+function changeKey() {
+  localStorage.removeItem('tmdb-key');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+  API_KEY = '';
+}
+
+async function launchApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('main-content').innerHTML = `
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <span>Loading your films from TMDb…</span>
+    </div>`;
+  await loadFilms();
+}
+
+// ─── TMDb API ─────────────────────────────────────────────────────────────────
+async function tmdbFetch(path) {
+  const res = await fetch(`https://api.themoviedb.org/3${path}`, {
+    headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) throw new Error(`TMDb error ${res.status}`);
+  return res.json();
+}
+
+async function getMovieDetails(tmdbId) {
+  const [details, providers] = await Promise.all([
+    tmdbFetch(`/movie/${tmdbId}?language=en-US`),
+    tmdbFetch(`/movie/${tmdbId}/watch/providers`)
+  ]);
+  return { details, providers: providers.results?.US || {} };
+}
+
+function extractStreamingServices(providers) {
+  const flatrate = providers.flatrate || [];
+  const services = [];
+  const nameMap = {
+    'Netflix': 'Netflix',
+    'Max': 'Max', 'HBO Max': 'Max',
+    'Hulu': 'Hulu',
+    'Amazon Prime Video': 'Prime', 'Prime Video': 'Prime',
+    'Apple TV+': 'Apple',
+    'MUBI': 'MUBI',
+    'Peacock': 'Peacock', 'Peacock Premium': 'Peacock',
+    'Paramount+': 'Paramount',
+    'Shudder': 'Shudder',
+    'The Criterion Channel': 'Criterion',
+    'Tubi TV': 'Tubi', 'Tubi': 'Tubi',
+  };
+  flatrate.forEach(p => {
+    const name = nameMap[p.provider_name] || p.provider_name;
+    if (!services.includes(name)) services.push(name);
+  });
+  return services;
+}
+
+async function loadFilms() {
+  const errorArea = document.getElementById('error-area');
+  errorArea.innerHTML = '';
+
+  // Filter to only high-match films (score >= 70) for performance
+  const toLoad = CURATED_FILMS.filter(f => f.matchScore >= 70);
+
+  try {
+    const results = await Promise.allSettled(
+      toLoad.map(f => getMovieDetails(f.tmdbId))
+    );
+
+    allFilms = [];
+    results.forEach((result, i) => {
+      const curated = toLoad[i];
+      if (result.status === 'fulfilled') {
+        const { details, providers } = result.value;
+        const streaming = extractStreamingServices(providers);
+        allFilms.push({
+          ...curated,
+          tmdbId: details.id,
+          title: details.title,
+          year: details.release_date ? parseInt(details.release_date) : curated.year,
+          overview: details.overview,
+          posterPath: details.poster_path,
+          backdropPath: details.backdrop_path,
+          tmdbRating: details.vote_average ? details.vote_average.toFixed(1) : null,
+          tmdbGenres: details.genres ? details.genres.map(g => g.name) : [],
+          runtime: details.runtime,
+          streaming,
+          streamingAvailable: streaming.length > 0,
+        });
+      }
+    });
+
+    // Sort by match score desc
+    allFilms.sort((a, b) => b.matchScore - a.matchScore);
+    applyFilters();
+
+  } catch (err) {
+    if (err.message.includes('401')) {
+      errorArea.innerHTML = `<div class="error-banner">⚠ Invalid API key. Please check your TMDb API Read Access Token and try again. <button onclick="changeKey()" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit">Change key →</button></div>`;
+    } else {
+      errorArea.innerHTML = `<div class="error-banner">⚠ Could not load films: ${err.message}. Check your internet connection.</div>`;
+    }
+    document.getElementById('main-content').innerHTML = '';
+  }
+}
+
+// ─── FILTERING ────────────────────────────────────────────────────────────────
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  applyFilters();
+}
+
+function toggleShowSeen() {
+  showSeen = !showSeen;
+  document.getElementById('seen-toggle-icon').textContent = showSeen ? '●' : '○';
+  document.getElementById('seen-toggle-btn').querySelector('span + span') || null;
+  applyFilters();
+}
+
+function applyFilters() {
+  currentMood = document.getElementById('mood-filter').value;
+  currentPlatform = document.getElementById('platform-filter').value;
+
+  let films = allFilms.filter(f => {
+    if (!showSeen && seenFilms.has(f.tmdbId)) return false;
+    if (dismissedFilms.has(f.tmdbId)) return false;
+    if (currentMood !== 'all' && !f.mood.includes(currentMood)) return false;
+    if (currentPlatform !== 'all' && !f.streaming.includes(currentPlatform)) return false;
+    return true;
+  });
+
+  if (currentTab === 'new') {
+    films = films.filter(f => f.isNew);
+  } else if (currentTab === 'overlap') {
+    films = films.filter(f => f.matchScore >= 88);
+  }
+
+  filteredFilms = films;
+  renderFilms();
+}
+
+// ─── RENDERING ────────────────────────────────────────────────────────────────
+function renderFilms() {
+  const container = document.getElementById('main-content');
+
+  if (filteredFilms.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>No films match right now</h3>
+        <p>Try changing the mood or platform filter, or check back as streaming catalogs update.</p>
+      </div>`;
+    return;
+  }
+
+  // Split into streaming now vs. rest
+  const streaming = filteredFilms.filter(f => f.streamingAvailable);
+  const notStreaming = filteredFilms.filter(f => !f.streamingAvailable);
+
+  let html = '';
+
+  if (streaming.length > 0) {
+    const isNew = currentTab === 'new';
+    html += `
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">
+            ${isNew ? 'New arrivals' : 'Stream now'}
+            <span class="section-badge ${isNew ? 'new' : ''}">${streaming.length} films</span>
+          </div>
+          <span class="section-desc">Available on streaming today</span>
+        </div>
+        <div class="film-grid">
+          ${streaming.map((f, i) => renderCard(f, i)).join('')}
+        </div>
+      </div>`;
+  }
+
+  if (notStreaming.length > 0 && currentPlatform === 'all') {
+    html += `
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">
+            Worth tracking
+            <span class="section-badge">${notStreaming.length} films</span>
+          </div>
+          <span class="section-desc">Not currently streaming — worth keeping an eye on</span>
+        </div>
+        <div class="film-grid">
+          ${notStreaming.map((f, i) => renderCard(f, i + streaming.length)).join('')}
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function renderCard(film, index) {
+  const poster = film.posterPath
+    ? `<img src="https://image.tmdb.org/t/p/w342${film.posterPath}" alt="${film.title}" loading="lazy" />`
+    : `<div class="film-poster-placeholder">🎬</div>`;
+
+  const streamChips = film.streaming.slice(0,4).map(s => {
+    const cls = ['Netflix','Max','Hulu','Prime','Apple','MUBI','Peacock','Paramount','Shudder','Criterion'].includes(s) ? s : 'other';
+    return `<span class="stream-chip stream-${cls}">${s}</span>`;
+  }).join('');
+
+  const reasonTags = film.reasons.slice(0,2).map(r =>
+    `<span class="reason-tag">${r}</span>`
+  ).join('');
+
+  const genreTags = film.tmdbGenres.slice(0,2).map(g =>
+    `<span class="genre-tag">${g}</span>`
+  ).join('');
+
+  const seen = seenFilms.has(film.tmdbId);
+  const delay = Math.min(index * 0.04, 0.6);
+
+  return `
+    <div class="film-card ${seen ? 'seen-film' : ''}"
+      style="animation-delay:${delay}s; opacity:${seen ? 0.5 : 1}"
+      onclick="openModal(${film.tmdbId})">
+      <div class="film-poster">
+        ${poster}
+        ${film.isNew ? '<span class="new-badge">New</span>' : ''}
+        <span class="match-badge">${film.matchScore}%</span>
+      </div>
+      <div class="film-info">
+        <div class="film-title">${film.title}</div>
+        <div class="film-meta-row">
+          <span class="film-year">${film.year}</span>
+          ${film.tmdbRating ? `<span class="film-dot">·</span><span class="film-rating">★ ${film.tmdbRating}</span>` : ''}
+          ${film.runtime ? `<span class="film-dot">·</span><span>${film.runtime}m</span>` : ''}
+        </div>
+        <div class="film-genres">${genreTags}</div>
+        ${streamChips ? `<div class="film-streaming">${streamChips}</div>` : ''}
+        <div class="match-reasons">${reasonTags}</div>
+      </div>
+    </div>`;
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openModal(tmdbId) {
+  const film = allFilms.find(f => f.tmdbId === tmdbId);
+  if (!film) return;
+
+  const backdrop = film.backdropPath
+    ? `<img src="https://image.tmdb.org/t/p/w1280${film.backdropPath}" alt="" />`
+    : `<div class="modal-backdrop-placeholder">🎬</div>`;
+
+  const poster = film.posterPath
+    ? `<img src="https://image.tmdb.org/t/p/w342${film.posterPath}" alt="${film.title}" />`
+    : '';
+
+  const streamChips = film.streaming.map(s => {
+    const cls = ['Netflix','Max','Hulu','Prime','Apple','MUBI','Peacock','Paramount','Shudder','Criterion'].includes(s) ? s : 'other';
+    return `<span class="modal-stream-chip stream-${cls}">${s}</span>`;
+  }).join('');
+
+  const whyMatch = buildWhyText(film);
+  const isSeen = seenFilms.has(tmdbId);
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-backdrop">
+      ${backdrop}
+      <div class="modal-backdrop-overlay"></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+      ${poster ? `<div class="modal-poster-float">${poster}</div>` : ''}
+    </div>
+    <div class="modal-body">
+      <div class="modal-title">${film.title}</div>
+      <div class="modal-meta">
+        <span>${film.year}</span>
+        ${film.runtime ? `<span class="modal-meta-sep">·</span><span>${film.runtime} min</span>` : ''}
+        ${film.tmdbRating ? `<span class="modal-meta-sep">·</span><span class="modal-rating-star">★ ${film.tmdbRating} TMDb</span>` : ''}
+        <span class="modal-meta-sep">·</span><span style="color:var(--amber)">${film.matchScore}% match</span>
+      </div>
+      ${film.overview ? `<div class="modal-overview">${film.overview}</div>` : ''}
+      ${streamChips ? `
+        <div class="modal-section-label">Streaming on</div>
+        <div class="modal-streaming">${streamChips}</div>` : '<div class="modal-section-label" style="color:var(--text3)">Not currently streaming</div>'}
+      <div class="modal-section-label">Why it matches</div>
+      <div class="modal-why">${whyMatch}</div>
+      <div class="modal-actions">
+        <button class="action-btn ${isSeen ? 'seen' : ''}" onclick="toggleSeen(${tmdbId})">
+          ${isSeen ? '✓ Marked as seen' : 'Mark as seen'}
+        </button>
+        <button class="action-btn" onclick="dismissFilm(${tmdbId})">Not interested</button>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function buildWhyText(film) {
+  const reasons = film.reasons || [];
+  const nicoleReasons = [];
+  const danielReasons = [];
+  const shared = [];
+
+  const nicoleKeywords = ['Folk horror','Liminal','Isolation','Uncanny','Mythology','International','Nicole'];
+  const danielKeywords = ['Cinematography','Heist','Crime','Nolan','Daniel'];
+
+  reasons.forEach(r => {
+    if (r.includes('both') || r.includes('Loved by both') || r.includes('Liked by both')) {
+      shared.push(r);
+    } else if (danielKeywords.some(k => r.includes(k))) {
+      danielReasons.push(r);
+    } else if (nicoleKeywords.some(k => r.includes(k))) {
+      nicoleReasons.push(r);
+    } else {
+      shared.push(r);
+    }
+  });
+
+  let parts = [];
+  if (shared.length) parts.push(`<strong>Both of you:</strong> ${shared.join(', ')}`);
+  if (nicoleReasons.length) parts.push(`<strong>Nicole:</strong> ${nicoleReasons.join(', ')}`);
+  if (danielReasons.length) parts.push(`<strong>Daniel:</strong> ${danielReasons.join(', ')}`);
+
+  return parts.join(' · ') || 'Strong alignment with your joint taste profile.';
+}
+
+function closeModal(event) {
+  if (event && event.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+function toggleSeen(tmdbId) {
+  if (seenFilms.has(tmdbId)) {
+    seenFilms.delete(tmdbId);
+  } else {
+    seenFilms.add(tmdbId);
+  }
+  localStorage.setItem('seen-films', JSON.stringify([...seenFilms]));
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  applyFilters();
+}
+
+function dismissFilm(tmdbId) {
+  dismissedFilms.add(tmdbId);
+  localStorage.setItem('dismissed-films', JSON.stringify([...dismissedFilms]));
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  applyFilters();
+}
+
+// ─── KEYBOARD ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+});
+</script>
+</body>
+</html>
